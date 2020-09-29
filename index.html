@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Lab 3</title>
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin=""/>
+
+        <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+        integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+        crossorigin=""></script>
+
+        <script type="text/javascript" src="data.js"></script>
+
+        <style>
+  /* Optional: adjust the values below to change the appearance of the legend */
+  .legend {
+      padding: 6px 8px;
+      line-height: 18px;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 5px;
+  }
+
+   /* Optional: adjust the values below to change the appearance of the legend color boxes */
+   .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+  }
+</style>
+
+    </head>
+
+
+    <body>
+        <div id="map" style="height: 500px"></div>
+
+        <script type="text/javascript">
+
+          var map = L.map('map', {
+              center: [41.83,-87.87],
+              zoom: 10.5
+          });
+
+         L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+           attribution: 'Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
+           maxZoom: 15,
+           minZoom: 5
+         }).addTo(map);
+
+         function getColor(value) {
+    return value > 1212 ? '#006d2c':
+           value > 609  ? '#31a354':
+           value > 206  ? '#74c476':
+           value > 104  ? '#bae4b3':
+                          '#edf8e9';
+    }
+                         function style(feature){
+                             return {
+                                 fillColor: getColor(feature.properties.ACRES),   // pop_den is the field name for the population density data
+                                 weight: 1,
+                                 opacity: 1,
+                                 color: 'blue',
+                                 fillOpacity: 0.9,
+                                 dashArray: '1, 1'
+
+                         };
+                         }
+                         function highlightFeature(e) {
+    // Get access to the feature that was hovered through e.target
+    var feature = e.target;
+
+    // Set a thick grey border on the feature as mouseover effect
+    // Adjust the values below to change the highlighting styles of features on mouseover
+    // Check out https://leafletjs.com/reference-1.3.4.html#path for more options for changing style
+    feature.setStyle({
+        weight: 5,
+         dasharray:null,
+        color: '#ffffff',
+        fillOpacity: 0.7
+    });
+
+    // Bring the highlighted feature to front so that the border doesn’t clash with nearby states
+    // But not for IE, Opera or Edge, since they have problems doing bringToFront on mouseover
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        feature.bringToFront();
+    }
+}
+var geojson; // define a variable to make the geojson layer accessible for the funtion to use
+
+function resetHighlight(e) {
+    geojson.resetStyle(e.target);
+}
+function onEachFeature(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature, // Do what defined by the highlightFeature function on mouseover
+        mouseout: resetHighlight,    // Do what defined by the resetHighlight function on mouseout
+    });
+}
+geojson = L.geoJson(data, {
+    style:style,
+    onEachFeature: onEachFeature
+}).bindPopup(function (layer){
+    return '<p style="color:green">' + layer.feature.properties.ACRES.toString() + ' Acres </p>';
+}).addTo(map);
+                           var legend = L.control({position: 'bottomright'}); // Try the other three corners if you like.
+
+legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'legend'),
+        grades = [0, 104, 206, 609, 1212]; // The break values to define the intervals of population, note we begin from 0 here
+
+    div.innerHTML = '<b>Size in Acres <br> 2012 <br></b>'; // The legend title (HTML-based), in this case it's Population Density 2011
+
+    // Loop through our the classes and generate a label with a color box for each interval.
+    // If you are creating a choropleth map, you DO NOT need to change lines below.
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+        '<i style="background:' + getColor(grades[i] + 1) + '"></i>' +
+        grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    }
+
+    return div;
+};
+
+legend.addTo(map);
+
+        </script>
+   </body>
+</html>
